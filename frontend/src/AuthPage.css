@@ -1,0 +1,230 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to right, #080b25, #070d47);
+    overflow-x: hidden;
+  }
+  
+  .auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(226deg, #050d4b, #01041f);
+    padding: 20px;
+    flex-wrap: wrap;
+    text-align: center;
+    overflow: auto;
+  }
+  
+  .auth-img {
+    color: white;
+    margin: 20px auto;
+  }
+  
+  .bot-icon {
+    width: 300px;
+    max-width: 80vw;
+    height: auto;
+    margin-bottom: 20px;
+  }
+  
+  h1 {
+    font-size: 3.5rem;
+    margin: 0;
+    word-wrap: break-word;
+  }
+  
+  h3 {
+    margin: 0;
+    padding-left: 10px;
+  }
+  
+  .tagline1 {
+    padding-left: 10px;
+  }
+  
+  .auth-box {
+    background-color: #01031f;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    margin: 20px auto;
+    color: white;
+    box-sizing: border-box;
+  }
+  
+  h2 {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+  }
+  
+  .tagline {
+    font-size: 0.9rem;
+    color: #b0b3d6;
+    margin-bottom: 25px;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 10px;
+    background-color: #1f213d;
+    color: white;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+  }
+  
+  .submit-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #3e63f5;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s ease;
+    margin-top: 10px;
+  }
+  
+  .submit-button:hover {
+    background-color: #3455dc;
+  }
+  
+  .toggle-link {
+    color: #b0b3d6;
+    font-size: 0.9rem;
+    margin-top: 20px;
+    cursor: pointer;
+  }
+  
+  .toggle-link:hover {
+    text-decoration: underline;
+  }
+  
+  /* ---------- RESPONSIVENESS ---------- */
+  
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2.5rem;
+    }
+  
+    h2 {
+      font-size: 1.3rem;
+    }
+  
+    .bot-icon {
+      width: 200px;
+    }
+  
+    .auth-box {
+      padding: 10px auto;
+    }
+    .auth-wrapper {
+        padding: 15px;
+      }
+  }
+  
+  @media (max-width: 480px) {
+    h1 {
+      font-size: 2rem;
+    }
+  
+    .bot-icon {
+        margin-bottom: 10px;
+      }
+    .auth-box {
+      padding: 15px;
+      width: 90%;
+    }
+  
+    input,
+    .submit-button {
+      font-size: 0.9rem;
+      padding: 10px;
+    }
+  
+    .tagline {
+      font-size: 0.8rem;
+    }
+    .auth-wrapper {
+        padding: 10px;
+      }
+      
+  }
+/* Add this to your existing CSS */
+
+/* Large screens (laptops and desktops) */
+@media (min-width: 1200px) {
+    .auth-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding:  20px;
+    }
+    
+    .auth-content {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 80px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .auth-img {
+      flex: 1;
+      max-width: 500px;
+      margin: 0;
+      text-align: left;
+    }
+    
+    .auth-box {
+      flex: 1;
+      max-width: 450px;
+      margin: 0;
+    }
+    
+    h1 {
+      font-size: 4rem;
+      text-align: left;
+      padding-left: 0;
+    }
+    
+    .tagline1 {
+      text-align: left;
+      padding-left: 0;
+      font-size: 1.2rem;
+    }
+    
+    .bot-icon {
+      width: 350px;
+    }
+  }
+  
+  /* Extra large screens (4K and larger) */
+  @media (min-width: 2000px) {
+    .auth-wrapper {
+      max-width: 1800px;
+    }
+    
+    .auth-content {
+      max-width: 1600px;
+      gap: 120px;
+    }
+    
+    h1 {
+      font-size: 5rem;
+    }
+    
+    .bot-icon {
+      width: 450px;
+    }
+  }  
