@@ -1,108 +1,296 @@
-import React, { useState, useEffect } from 'react';
+// HomePage.js
+import React, { useState, useEffect, useCallback } from 'react';
 import './HomePage.css';
-import botImage from './AI_bot.png';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { FaUserCircle, FaMoon, FaBell } from 'react-icons/fa';
+import { FiMoreVertical, FiChevronLeft, FiChevronRight, FiMoreHorizontal } from 'react-icons/fi';
 
 const HomePage = () => {
-  const [messages, setMessages] = useState([{ sender: 'bot', text: 'Hello! How can I help you today?' }]);
-  const [input, setInput] = useState('');
-  const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [user, setUser] = useState(null);
-
   const navigate = useNavigate();
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversationId, setSelectedConversationId] = useState(null);
+  const [user, setUser] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState(null);
+
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    if (token) {
-      axios.get("http://localhost:8000/auth/profile", {
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await axios.get("http://127.0.0.1:8000/auth/profile", {
         headers: { Authorization: `Bearer ${token}` }
-      }).then(res => {
-        setUser(res.data);
-      }).catch(err => {
-        console.error("Profile fetch failed", err);
       });
+      setUser(res.data);
+    } catch (err) {
+      console.error("Error fetching user profile", err);
+      navigate('/');
+    }
+  }, [token, navigate]);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await axios.get("http://127.0.0.1:8000/conversations", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversations(res.data);
+    } catch (err) {
+      console.error("Error fetching conversations", err);
     }
   }, [token]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const newMessage = { sender: 'user', text: input };
-    setMessages([...messages, newMessage, { sender: 'bot', text: 'Let me think about that...' }]);
+  useEffect(() => {
+    if (!token) {
+      navigate('/');
+    } else {
+      fetchProfile();
+      fetchConversations();
+    }
+  }, [token, navigate, fetchProfile, fetchConversations]);
+
+  useEffect(() => {
+    const el = document.querySelector(".chat-messages");
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
+  const fetchMessages = async (conversationId) => {
+    try {
+      const res = await axios.get(`http://127.0.0.1:8000/conversations/${conversationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const parsedMessages = res.data.messages.map((m) => {
+        if (m.sender === 'bot') {
+          try {
+            const parsed = JSON.parse(m.content);
+            if (typeof parsed === 'string') {
+              return { sender: 'bot', text: parsed };
+            }
+            const resultLines = parsed.result
+              ? Object.entries(parsed.result).map(([k, v]) => {
+                  if (typeof v === 'object' && v !== null) {
+                    return Object.entries(v).map(([key, val]) => `${key}: ${val}`).join('\n');
+                  }
+                  return `${k}: ${v}`;
+                })
+              : [];
+            return {
+              sender: 'bot',
+              text: resultLines.join('\n')
+            };
+          } catch {
+            return { sender: 'bot', text: m.content || '❌ Error parsing bot response' };
+          }
+        } else {
+          return { sender: 'user', text: m.content };
+        }
+      });
+      setMessages(parsedMessages);
+      setSelectedConversationId(conversationId);
+    } catch (err) {
+      console.error("Error fetching messages", err);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+    setMessages(prev => [...prev, { sender: 'user', text: input }, { sender: 'bot', text: 'Thinking...' }]);
+    setIsLoading(true);
+    const question = input;
     setInput('');
+
+    try {
+      const res = await axios.post("http://127.0.0.1:8000/ask", {
+        message: question,
+        conversation_id: selectedConversationId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const result = res.data;
+      const botText = typeof result.result === 'string' ? result.result : JSON.stringify(result.result);
+
+      setMessages(prev => {
+        const newMsgs = [...prev];
+        newMsgs.pop();
+        return [...newMsgs, { sender: 'bot', text: botText }];
+      });
+
+      if (!selectedConversationId && result.conversation_id) {
+        setSelectedConversationId(result.conversation_id);
+      }
+
+      fetchConversations();
+    } catch (err) {
+      console.error("Error in /ask:", err);
+      setMessages(prev => {
+        const newMsgs = [...prev];
+        newMsgs.pop();
+        return [...newMsgs, { sender: 'bot', text: '❌ Sorry, an error occurred.' }];
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewChat = () => {
+    setMessages([{ sender: 'bot', text: 'Hello! How can I help you with your business data today?' }]);
+    setSelectedConversationId(null);
   };
 
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:8000/auth/logout", {}, {
+      await axios.post("http://127.0.0.1:8000/auth/logout", {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (err) {
-      console.warn("Logout failed or token already expired", err);
+      console.error("Logout failed", err);
+    } finally {
+      localStorage.removeItem("token");
+      navigate("/");
     }
-    localStorage.removeItem("token");
-    navigate("/");
-    alert("Are you want Logout");
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !isLoading && input.trim()) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleEdit = async (conversationId) => {
+    const newTitle = prompt("Enter new title:");
+    if (!newTitle) return;
+    try {
+      await axios.put(`http://127.0.0.1:8000/conversations/${conversationId}`, {
+        title: newTitle
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchConversations();
+    } catch (err) {
+      console.error("Edit failed", err);
+    }
+  };
+
+  const handleDelete = async (conversationId) => {
+    if (!window.confirm("Are you sure you want to delete this conversation?")) return;
+    try {
+      await axios.delete(`http://127.0.0.1:8000/conversations/${conversationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (selectedConversationId === conversationId) {
+        setSelectedConversationId(null);
+        setMessages([]);
+      }
+      fetchConversations();
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
   };
 
   return (
-    
-    <div className="home-wrapper">
-      {/* Top-right user icon */}
-      <div className="top-right-icon" onClick={() => setDropdownVisible(!dropdownVisible)}>
-        <i className="fas fa-user-circle"></i>
-        {dropdownVisible && (
-          <div className="dropdown-box">
-              <p> {user?.UserName}</p>
-              <p> {user?.Email}</p>
-            <button className="logout-button" onClick={handleLogout}>Logout</button>
+    <div className={`home-wrapper ${darkMode ? 'dark-mode' : ''}`}>
+      <div className={`chat-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <button className="sidebar-toggle " class="sidebar-toggle"onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+           <i className="bi bi-layout-sidebar"></i>
+          
+        </button>
+        <button className="new-chat-button" onClick={handleNewChat}>+ New Chat</button>
+      <div className="conversations-list">
+  {conversations.length ? conversations.map(conv => (
+    <div
+      key={conv.conversationId}
+      className={`conversation-item ${selectedConversationId === conv.conversationId ? 'active' : ''}`}
+      onClick={() => fetchMessages(conv.conversationId)}
+    >
+      <p>{conv.title.length > 25 ? conv.title.slice(0, 25) + '…' : conv.title}</p>
+      <small>{new Date(conv.startedAt).toLocaleString()}</small>
+      <div className="action-menu">
+        <button
+          className="dots-button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpenId(menuOpenId === conv.conversationId ? null : conv.conversationId);
+          }}
+        >
+          <FiMoreHorizontal />
+        </button>
+        {menuOpenId === conv.conversationId && (
+          <div className="dropdown-menu">
+            <button onClick={(e) => { e.stopPropagation(); handleEdit(conv.conversationId); setMenuOpenId(null); }}>Edit</button>
+            <button onClick={(e) => { e.stopPropagation(); handleDelete(conv.conversationId); setMenuOpenId(null); }}>Delete</button>
           </div>
         )}
       </div>
+    </div>
+  )) : <p className="no-conversations">No conversations yet</p>}
+</div>
 
-      {sidebarVisible && (
-        <div className="chat-sidebar">
-          <img
-            src={botImage}
-            alt="VantaMind Bot"
-            className="chat-bot-icon"
-            onClick={() => setSidebarVisible(false)}
-          />
-          <h1>VantaMind</h1>
-          <p className="tagline">Welcome {user?.UserName || 'User'}</p>
+      </div>
+
+      <div className="chat-box">
+        <div className="top-right-icon" onClick={() => setShowDropdown(!showDropdown)}>
+          <FaUserCircle />
         </div>
-      )}
 
-      <div className={`chat-box ${sidebarVisible ? 'shifted' : ''}`}>
+        {showDropdown && (
+          <div className="dropdown-box">
+            <p><strong>{user?.username}</strong></p>
+            <button className="dropdown-item" onClick={handleLogout}>Logout</button>
+          </div>
+        )}
+
+        {showSettings && (
+          <div className="settings-panel">
+            <h3>Settings</h3>
+            <div className="setting-item" onClick={() => setDarkMode(!darkMode)}>
+              <FaMoon /> Theme: {darkMode ? 'Dark' : 'Light'}
+            </div>
+            <div className="setting-item" onClick={() => setNotificationsEnabled(!notificationsEnabled)}>
+              <FaBell /> Notifications: {notificationsEnabled ? 'On' : 'Off'}
+            </div>
+            <button onClick={() => setShowSettings(false)}>Close</button>
+          </div>
+        )}
+
         <div className="chat-messages">
           {messages.map((msg, idx) => (
             <div key={idx} className={`chat-message ${msg.sender}`}>
-              {msg.sender === 'bot' && <img src={botImage} alt="Bot" className="message-avatar" />}
-              <span>{msg.text}</span>
+              <div className="message-content">
+                {(msg.text || '').split('\n').map((line, i) => (
+                  <React.Fragment key={i}>{line}<br /></React.Fragment>
+                ))}
+              </div>
             </div>
           ))}
         </div>
+
         <div className="chat-input-wrapper">
           <input
             type="text"
             className="chat-input"
-            placeholder="Ask anything about your business..."
+            placeholder="Ask anything about your business data..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
           />
-          <button className="send-button" onClick={handleSend}>
-            Send
+          <button
+            className="send-button"
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+          >
+            {isLoading ? '...' : 'Send'}
           </button>
         </div>
       </div>
-
-      {!sidebarVisible && (
-        <div className="chat-bot-icon-wrapper" onClick={() => setSidebarVisible(true)}>
-          <img src={botImage} alt="Open Sidebar" className="chat-bot-icon" />
-        </div>
-      )}
     </div>
   );
 };

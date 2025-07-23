@@ -40,7 +40,7 @@ const AuthPage = () => {
       }
 
       const data = await response.json();
-
+      debugger
       if (isLogin) {
         // Save token and redirect to home page on successful login
         localStorage.setItem("token", data.access_token);
@@ -64,11 +64,8 @@ const AuthPage = () => {
       <div className="auth-img">
         <img src={botImage} alt="VantaMind Bot" className="bot-icon" /> <br />
         <h1>VantaMind</h1>
-        <h3>Your AI Assistant</h3>
-        <p className="tagline1">
-          Ask any question you have about sales,<br />
-          inventory, and business trends!
-        </p>
+        <h3>AI Brain For Your Business</h3>
+        
       </div>
 
       {/* Right Side Auth Form */}
